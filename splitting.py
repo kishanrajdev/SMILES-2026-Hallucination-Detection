@@ -18,8 +18,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
-
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
 def split_data(
     y: np.ndarray,
@@ -45,26 +44,21 @@ def split_data(
     Returns:
         A list of ``(idx_train, idx_val, idx_test)`` tuples of integer index
         arrays.  ``idx_val`` may be ``None``.
-
-    Student task:
-        Replace or extend the skeleton below.  The only contract is that the
-        function returns the list described above.
     """
-
+    n_splits = 5
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
     idx = np.arange(len(y))
 
-    idx_train_val, idx_test = train_test_split(
-        idx,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=y,
-    )
-    relative_val = val_size / (1.0 - test_size)
-    idx_train, idx_val = train_test_split(
-        idx_train_val,
-        test_size=relative_val,
-        random_state=random_state,
-        stratify=y[idx_train_val],
-    )
-    return [(idx_train, idx_val, idx_test)]
+    splits: list[tuple[np.ndarray, np.ndarray | None, np.ndarray]] = []
 
+    for train_val_idx, test_idx in skf.split(idx, y):
+        # Stratified split of the train+val portion into train and val.
+        train_idx, val_idx = train_test_split(
+            train_val_idx,
+            test_size=val_size,
+            random_state=random_state,
+            stratify=y[train_val_idx],
+        )
+        splits.append((train_idx, val_idx, test_idx))
+
+    return splits
