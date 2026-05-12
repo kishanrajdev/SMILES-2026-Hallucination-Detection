@@ -28,7 +28,7 @@ class HallucinationProbe(nn.Module):
         StandardScaler → PCA(256, whitened) → LogisticRegression(C=0.1)
 
     """
-    N_COMPONENTS: int = 128
+    N_COMPONENTS: int = 256
 
     def __init__(self) -> None:
         super().__init__()
@@ -41,7 +41,7 @@ class HallucinationProbe(nn.Module):
             ("scaler", StandardScaler()),
             ("pca", PCA(n_components=n_components, whiten=True, random_state=42)),
             ("clf", LogisticRegression(
-                C=0.05,  # middle ground: 0.1 overfit, 0.01 over-regularised
+                C=0.1,  # middle ground: 0.1 overfit, 0.01 over-regularised
                 max_iter=1000,
                 solver="lbfgs",
                 class_weight="balanced",
