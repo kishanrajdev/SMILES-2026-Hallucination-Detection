@@ -62,14 +62,14 @@ StandardScaler → PCA(128 components, whitened) → LogisticRegression(C=0.05)
 
 ### Final Results
 
-| Metric | Value     |
-|--------|-----------|
+| Metric                | Value     |
+|-----------------------|-----------|
 | Avg baseline accuracy | 0.701     |
-| Avg baseline F1 | 0.824     |
+| Avg baseline F1       | 0.824     |
 | **Avg test accuracy** | **0.701** |
-| **Avg test F1** | **0.816** |
-| **Avg test AUROC** | **0.694** |
-| Avg train AUROC | 0.884     |
-| Feature dim | 7168      |
+| **Avg test F1**       | **0.816** |
+| **Avg test AUROC**    | **0.694** |
+| Avg train AUROC       | 0.884     |
+| Feature dimensions    | 7168      |
 
 ---
