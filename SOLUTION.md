@@ -46,7 +46,7 @@ A scikit-learn pipeline:
 StandardScaler → PCA(128 components, whitened) → LogisticRegression(C=0.05)
 ```
 
-**Logistic Regression:**  With only ~468 training samples, a linear probe with strong regularisation generalises far better than non-linear alternatives (MLPs) which overfit severely.
+**Why Logistic Regression?**  With only ~468 training samples, a linear probe with strong regularisation generalises far better than non-linear alternatives (MLPs) which overfit severely.
 
 **PCA:** 128 components were chosen empirically out of 7168 dimensions as the best trade-off between retained variance and overfitting.
 
