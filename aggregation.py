@@ -19,6 +19,40 @@ from __future__ import annotations
 
 import torch
 
+_SELECTED_LAYERS = [11, 15, 19, 23]     # layers to pool
+
+def _masked_mean(layer: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    """Return the mean hidden state across all real tokens where mask == 1, ignoring padding .
+
+    Args:
+        layer: ``(seq_len, hidden_dim)`` float tensor.
+        mask:  ``(seq_len,)`` tensor (any dtype); moved to layer's device.
+
+    Returns:
+        ``(hidden_dim,)`` float tensor on the same device as ``layer``.
+    """
+    layer  = layer.float()
+    mask   = mask.view(-1).to(device=layer.device, dtype=torch.float32)
+    mask_f = mask.unsqueeze(-1)                    # (seq_len, 1)
+    summed = (layer * mask_f).sum(dim=0)
+    count  = mask_f.sum().clamp(min=1.0)
+    return summed / count
+
+def _last_token(layer: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    """Return the hidden state of the last *real* (non-padding) token.
+
+    Args:
+        layer: ``(seq_len, hidden_dim)`` float tensor.
+        mask:  ``(seq_len,)`` tensor; 1 for real tokens.
+
+    Returns:
+        ``(hidden_dim,)`` float tensor.
+    """
+    layer = layer.float()
+    mask  = mask.view(-1).to(device=layer.device, dtype=torch.float32)
+    real_positions = mask.nonzero(as_tuple=False)
+    last_pos = int(real_positions[-1].item())
+    return layer[last_pos]
 
 def aggregate(
     hidden_states: torch.Tensor,
@@ -34,28 +68,20 @@ def aggregate(
                         tokens and 0 for padding.
 
     Returns:
-        A 1-D feature tensor of shape ``(hidden_dim,)`` or
-        ``(k * hidden_dim,)`` if multiple layers are concatenated.
-
-    Student task:
-        Replace or extend the skeleton below with alternative layer selection,
-        token pooling (mean, max, weighted), or multi-layer fusion strategies.
+        A 1-D feature tensor of shape ``(n_selected * 2 * hidden_dim,)``.
     """
-    # ------------------------------------------------------------------
-    # STUDENT: Replace or extend the aggregation below.
-    # ------------------------------------------------------------------
+    n_layers = hidden_states.size(0)
+    parts: list[torch.Tensor] = []
 
-    # Default: last real token of the final transformer layer.
-    layer = hidden_states[-1]          # (seq_len, hidden_dim)
+    for idx in _SELECTED_LAYERS:
+        safe_idx = min(idx, n_layers - 1)
+        layer    = hidden_states[safe_idx].float()
 
-    # Find the index of the last real (non-padding) token.
-    real_positions = attention_mask.nonzero(as_tuple=False)  # (n_real, 1)
-    last_pos = int(real_positions[-1].item())                 # scalar index
+        mean_vec  = _masked_mean(layer, attention_mask)   # (hidden_dim,)
+        last_vec  = _last_token(layer, attention_mask)    # (hidden_dim,)
+        parts.append(torch.cat([mean_vec, last_vec], dim=0))
 
-    feature = layer[last_pos]          # (hidden_dim,)
-
-    return feature
-    # ------------------------------------------------------------------
+    return torch.cat(parts, dim=0)   # (n_selected * 2 * hidden_dim,)
 
 
 def extract_geometric_features(
